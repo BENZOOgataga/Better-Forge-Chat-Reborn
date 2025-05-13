@@ -15,6 +15,10 @@ import net.minecraftforge.event.entity.player.PlayerEvent.SaveToFile;
 import net.minecraftforge.event.entity.player.PlayerEvent.TabListNameFormat;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod.EventBusSubscriber;
+import net.minecraft.server.MinecraftServer;
+import com.jeremiahbl.bfcrmod.events.ServerMessageEvent;
+import net.minecraft.network.chat.MutableComponent;
+import net.minecraft.network.chat.Component;
 
 import java.io.IOException;
 
@@ -59,4 +63,19 @@ public class PlayerEventHandler implements IReloadable {
 		BetterForgeChat.LOGGER.debug("Loading all Player Data");
 		PlayerData.loadFromDir(e.getPlayerDirectory());
 	}
+
+    // Use PlayerLoggedOutEvent for disconnects
+    @SubscribeEvent
+    public void onPlayerLoggedOut(net.minecraftforge.event.entity.player.PlayerEvent.PlayerLoggedOutEvent event) {
+        if (!(event.getEntity() instanceof ServerPlayer player)) return;
+        GameProfile profile = player.getGameProfile();
+        String name = BetterForgeChatUtilities.getRawPreferredPlayerName(profile);
+        // Custom leave message with format reset
+        String leaveMsg = "&e$player §7has left the game.&r".replace("$player", name);
+        MutableComponent formatted = com.jeremiahbl.bfcrmod.TextFormatter.stringToFormattedText(leaveMsg);
+        MinecraftServer server = player.getServer();
+        if (server != null) {
+            ServerMessageEvent.broadcastMessage(player.level(), formatted);
+        }
+    }
 }
